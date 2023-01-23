@@ -1,0 +1,21 @@
+{
+  "name": "review_site_backend",
+  "version": "1.0.0",
+  "homepage": "https://totmak.github.io/reviewSiteBackend/",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "predeploy": "npm run build" ,
+    "deploy": "gh-pages -d build",
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ajax": "^0.0.4",
+    "express": "^4.18.2",
+    "gh-pages": "^5.0.0",
+    "socket.io": "^4.5.4"
+  }
+}
