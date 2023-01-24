@@ -2,10 +2,15 @@ const core = require('@actions/core');
 const github = require('@actions/github');
 const express = require('express');
 const app = express();
+
+require("dotenv").config();
+
 const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
 //const io = new Server(server);
+
+const PORT = process.env.PORT;
 
 const io = require("socket.io")(server, {
   cors: {
@@ -22,8 +27,8 @@ app.get('/', (req, res) => {
 
 
 
-server.listen(5000, () => {
-  console.log('listening on *:3000');
+server.listen(PORT, () => {
+  console.log(`listening on ${PORT}`);
 });
 
 
