@@ -5,11 +5,6 @@ jobs:
     runs-on: ubuntu-latest
     name: A job to say hello
     steps:
-<<<<<<< HEAD
-      - name: Hello world action step
-        id: hello
-        uses: totmak/reviewSiteBackend
-=======
       # To use this repository's private action,
       # you must check out the repository
       - name: Checkout
@@ -17,7 +12,6 @@ jobs:
       - name: Hello world action step
         uses: ./ # Uses an action in the root directory
         id: hello
->>>>>>> bccfec90b3671fde7725e3f46d77d0766e5fc259
         with:
           who-to-greet: 'Mona the Octocat'
       # Use the output from the `hello` step
