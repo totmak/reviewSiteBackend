@@ -13,7 +13,7 @@ const dbConnection = require('./database.js').estCon;
 const PORT = process.env.PORT;
 const io = require("socket.io")(server, {
   cors: {
-    origin: "https://reviewsite-production.up.railway.app/",
+    origin: "http://localhost:3000",
     methods: ["CONNECT", "GET", "POST"]
   }
 });
