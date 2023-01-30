@@ -13,8 +13,9 @@ const dbConnection = require('./database.js').estCon;
 const PORT = process.env.PORT;
 const io = require("socket.io")(server, {
   cors: {
-    origin: "http://localhost:3000",
-    methods: ["CONNECT", "GET", "POST"]
+    origin: "https://totmak.github.io/reviewSite/",
+    methods: ["CONNECT", "GET", "POST"],
+    credentials: true
   }
 });
 
