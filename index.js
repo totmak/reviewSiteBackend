@@ -12,15 +12,16 @@ const dbConnection = require('./database.js').estCon;
 
 const PORT = process.env.PORT;
 const io = require("socket.io")(server, {
-  cors: {
-    origin: "reviewsite-production.up.railway.app:3000",
-    methods: ["CONNECT", "GET", "POST"],
-    transports : ["websocket", "polling"],
+  handlePreflightRequest: (req, res) => {
+    res.writeHead(200, {
+      "Access-Control-Allow-Origin": "reviewsite-production.up.railway.app:300",
+      "Access-Control-Allow-Methods": "GET,POST",
+      "Access-Control-Allow-Headers": "my-custom-header",
+      "Access-Control-Allow-Credentials": true
+    });
+    res.end();
   }
 });
-
-
-
 
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
