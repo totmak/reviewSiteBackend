@@ -13,11 +13,12 @@ const dbConnection = require('./database.js').estCon;
 const PORT = process.env.PORT;
 const io = require("socket.io")(server, {
   cors: {
-    origin: "https://reviewsite-production.up.railway.app:3000",
+    origin: "reviewsite-production.up.railway.app",
     methods: ["CONNECT", "GET", "POST"],
-    credentials: true
+    transports : ["websocket", "polling"],
   }
 });
+
 
 
 
