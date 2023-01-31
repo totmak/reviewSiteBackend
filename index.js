@@ -16,7 +16,7 @@ const io = require("socket.io")(server, {
     res.writeHead(200, {
       "Access-Control-Allow-Origin": "reviewsite-production.up.railway.app:300",
       "Access-Control-Allow-Methods": "GET,POST",
-      "Access-Control-Allow-Headers": "my-custom-header",
+      "Access-Control-Allow-Headers": "basic-header",
       "Access-Control-Allow-Credentials": true
     });
     res.end();
