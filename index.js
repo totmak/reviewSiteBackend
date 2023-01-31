@@ -12,6 +12,8 @@ const dbConnection = require('./database.js').estCon;
 
 const PORT = process.env.PORT;
 const io = require("socket.io")(server, {
+  const io = require("socket.io")(httpServer, {
+  origins: ["reviewsite-production.up.railway.app:300"],
   handlePreflightRequest: (req, res) => {
     res.writeHead(200, {
       "Access-Control-Allow-Origin": "reviewsite-production.up.railway.app:300",
