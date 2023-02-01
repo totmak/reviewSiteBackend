@@ -12,17 +12,11 @@ const dbConnection = require('./database.js').estCon;
 
 const PORT = process.env.PORT;
 const io = require("socket.io")(server, {
-  origins: ["reviewsite-production.up.railway.app:300"],
-  handlePreflightRequest: (req, res) => {
-    res.writeHead(200, {
-      "Access-Control-Allow-Origin": "reviewsite-production.up.railway.app:300",
-      "Access-Control-Allow-Methods": "GET,POST",
-      "Access-Control-Allow-Headers": "basic-header",
-      "Access-Control-Allow-Credentials": true
-    });
-    res.end();
-  }
+  origins: ["reviewsite-production.up.railway.app"],
+
 });
+
+//localhost:3000
 
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
@@ -52,13 +46,13 @@ io.on('connect', (socket, next) => {
 
 
 io.on('connection', (socket, next) => {
-
   socket.on("submitRegisterUser", function (msg) {
+    console.log(msg);
     const db = dbConnection.getDatabaseById("user_accounts");
 
     if (db != undefined) {
       db.registerAccount(msg);
-      socket.emit("testo", "xa");
+//      socket.emit("testo", "xa");
     }
   })
   socket.on("submitLoginAttempt", function (msg) {

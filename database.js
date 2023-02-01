@@ -95,8 +95,10 @@ class Connection {
   constructor(){}
   async estabalish(dblist){
     this.client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
     await this.client.connect();
     this.databases = dblist.map((item, i) => { return new Database(item, this.client); });
+    console.log("connected");
   }
   getDatabaseById(id){
     return this.databases.find((item, i) => {
@@ -133,6 +135,3 @@ async function somele() {
     await client.close();
   }
 }*/
-
-
-//somele().catch(console.error);
