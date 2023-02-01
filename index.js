@@ -12,8 +12,7 @@ const dbConnection = require('./database.js').estCon;
 
 const PORT = process.env.PORT;
 const io = require("socket.io")(server, {
-  origins: ["reviewsite-production.up.railway.app"],
-
+  origins: ["ws:reviewsite-production.up.railway.app:3000"],
 });
 
 //localhost:3000
