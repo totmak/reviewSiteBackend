@@ -14,17 +14,23 @@ class Collection {
   }
 
   async addTo(addition){
-
     await this.client.db(this.parent.id).collection(this.id).insertOne(addition)
-
-/*
-    await this.client.db(this.parent.id).collection(this.id).insertOne({name:"xaz0"});
-    console.log("aad");*/
   }
 
-  async getFrom(querry){
-    return this.client.db(this.parent.id).collection(this.id).findOne(querry, {});
+  async getOneFrom(querry, proje){
+    return this.client.db(this.parent.id).collection(this.id).findOne(querry,proje);
   }
+
+  async getAllFrom(querry, proje){
+    return this.client.db(this.parent.id).collection(this.id).find(querry).project(proje).toArray();
+  }
+
+  async updateCollection(querry, update){
+    this.client.db(this.parent.id).collection(this.id).updateOne(querry,
+      { $set: update}
+    )
+  }
+
 }
 
 
@@ -45,9 +51,9 @@ class Database {
     return this.getCollectionById(id) != undefined;
   }
 
-  addToCollect(collectionID, addition){
-    if (this.hasCollectionId(collectionID)){
-      this.getCollectionById(collectionID).addTo(addition);
+  async addToCollection(collectionID, addition){
+    if (await this.hasCollectionId(collectionID)){
+      await this.getCollectionById(collectionID).addTo(addition);
     }
   }
 
@@ -62,26 +68,26 @@ class Database {
   };
 
    async registerAccount(info){
-    const uID = await this.getCollectionById("user_ids").getCount();
-    this.addToCollect("user_ids", {"value": uID});
-    this.addToCollect("usernames", {"value": info.username, "uID": uID});
-    this.addToCollect("forenames", {"value": info.firstname, "uID": uID});
-    this.addToCollect("surnames", {"value": info.lastname, "uID": uID});
-    this.addToCollect("passwords", {"value": info.password, "uID": uID});
+    const uID = (await this.getCollectionById("user_ids").getCount())+1000;
+    await this.addToCollection("user_ids", {"value": uID});
+    await this.addToCollection("usernames", {"value": info.username, "uID": uID});
+    await this.addToCollection("forenames", {"value": info.firstname, "uID": uID});
+    await this.addToCollection("surnames", {"value": info.lastname, "uID": uID});
+    await this.addToCollection("passwords", {"value": info.password, "uID": uID});
   }
 
   async findLoginStatus(info, socket){
-    const userName = await this.getCollectionById("usernames").getFrom(
-      {"value": info.username}
+    const userName = await this.getCollectionById("usernames").getOneFrom(
+      {"value": info.username},{_id: 0}
     );
     if (userName == null){
       socket.emit('loginFailNoUsername', userName);
     } else {
       const uID = userName.uID;
-      const passCheck = await this.getCollectionById("passwords").getFrom(
+      const passCheck = await this.getCollectionById("passwords").getOneFrom(
         { "uID": uID,
           "value": info.password
-        })
+        }, {})
         if (passCheck){
           socket.emit('loginSuccess', userName);
         } else {
@@ -89,16 +95,95 @@ class Database {
         }
     }
   }
+
+
+  /*
+    Called from this.handleGroupJoin
+  */
+
+  async createNewChatGroup(info){
+    await this.addToCollection("groups",
+      {"name":info.group,
+      "participants":
+        { 0: "server", 1: "visitor" }
+      }
+    );
+
+    if (info.uID != 1){
+      await estCon.addParticipantToGroup(info.uID, info.group);
+    }
+
+    const group = await this.getCollectionById("groups").getOneFrom(
+      {"name": info.group}, {}
+    );
+    await this.addToCollection("messages", {"groupName": info.group, "message": `New chat room has been created by ${group.participants[info.uID]}`, "user": 0});
+    return group;
+  }
+
+  async firstJoinChatGroup(info,group){
+    if (info.uID != 1){
+      await estCon.addParticipantToGroup(info.uID, info.group);
+    }
+    const newGroup = await this.getCollectionById("groups").getOneFrom(
+      {"name": info.group}, {}
+    );
+    await this.addToCollection("messages", {"groupName": info.group, "message": `${newGroup.participants[info.uID]} has joined`, "user": 0});
+  }
+
+  async reJoinChatGroup(info,group){
+    const serverMessage = (info.uID != 1)?`${group.participants[info.uID]} has rejoined`:`A visitor has joined`;
+    await this.addToCollection("messages", {"groupName": info.group, "message": serverMessage, "user": 0});
+  }
+
+  async joinChatGroup(info){
+    const group = await this.getCollectionById("groups").getOneFrom(
+      {"name": info.group}, {}
+    );
+    if (group.participants[info.uID] == undefined){
+      await this.firstJoinChatGroup(info,group);
+    } else {
+      await this.reJoinChatGroup(info,group);
+    }
+    return group;
+  }
+
+  /**
+  * if group exists, join it, otherwise create a new group
+  *
+  **/
+
+  async handleGroupJoin(info, socket){
+    const group = (await this.getCollectionById("groups").getOneFrom(
+      {"name": info.group}, {}) == undefined?await this.createNewChatGroup(info):await this.joinChatGroup(info)
+    );
+    const groupMessages = await this.getCollectionById("messages").getAllFrom(
+      { "groupName": group.name}, {_id: 0})
+    socket.emit("updateChatLog", {"messages": groupMessages, "participants": group.participants});
+  }
+
+  async handleChatMessage(info, socket){
+    const group = await this.getCollectionById("groups").getOneFrom(
+      {"name": info.group}, {}
+    );
+    await this.addToCollection("messages", {"groupName": info.group, "message": info.message, "user": info.user!=null?info.user:1});
+    const groupMessages = await this.getCollectionById("messages").getAllFrom(
+      { "groupName": group.name}, {_id: 0})
+    socket.emit('updateChatLog', {"messages": groupMessages, "participants": group.participants});
+  }
+
 }
 
 class Connection {
   constructor(){}
-  async estabalish(dblist){
+  async estabalish(dblist, socketList){
+    this.socketList = socketList;
     this.client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 
     await this.client.connect();
     this.databases = dblist.map((item, i) => { return new Database(item, this.client); });
-    console.log("connected");
+    console.log("connected to database has been estabalish");
+    this.socketList.hasDbConnect = true;
+    this.socketList.updator();
   }
   getDatabaseById(id){
     return this.databases.find((item, i) => {
@@ -108,30 +193,19 @@ class Connection {
   unestabalish(){
     estCon.client.close();
     this.databases.length = 0;
+    this.socketList.hasDbConnect = false;
     console.log("disconnected from the database");
+  }
+  async addParticipantToGroup(uid, groupName){
+    const dbUA = await estCon.getDatabaseById("user_accounts");
+    const userName = await dbUA.getCollectionById("usernames").getOneFrom(
+      {"uID": Number(uid)},{_id: 0}
+    )
+    const dbChat = await estCon.getDatabaseById("chats");
+    const partUpdate = await dbChat.getCollectionById("groups").getOneFrom( {"name": groupName},{participants: 1} );
+    partUpdate.participants[uid] = userName.value;
+    await dbChat.getCollectionById("groups").updateCollection({"name": groupName}, {"participants": partUpdate.participants})
   }
 }
 const estCon = new Connection();
 module.exports = { estCon };
-
-
-
-
-/*
-async function somele() {
-  try {
-      await client.connect();
-      const uId = await Collection.getCount(client, "user_accounts", "usernames");
-
-      await Collection.addTo(client, "user_accounts", "user_ids", {uID: uId});
-
-      await Collection.addTo(client, "user_accounts", "usernames", {name: "testName", "uID": uId});
-      await Collection.addTo(client, "user_accounts", "passwords", {password: "testPassword", "uID": uId});
-      const geto = await Collection.getFrom(client, "user_accounts", "passwords", {"uID": uId});
-      console.log(geto);
-  } catch (e) {
-      console.error(e);
-  } finally {
-    await client.close();
-  }
-}*/
