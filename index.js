@@ -16,17 +16,13 @@ const io = require("socket.io")(server, {
 });
 
 /*
-ws:localhost:3000
-const io = require("socket.io")(server, {
-  origins: ["ws:reviewsite-production.up.railway.app:3000"],
-});
+  ws:localhost:3000
+  ws:reviewsite-production.up.railway.app:3000
 */
 
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
 });
-
-
 
 server.listen(PORT, () => {
   console.log(`listening on ${PORT}`);
