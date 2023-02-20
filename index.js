@@ -65,7 +65,7 @@ io.on('connection', (socket, next) => {
     const db = dbConnection.getDatabaseById("user_accounts");
 
     if (db != undefined) {
-      db.registerAccount(msg);
+      db.registerAccount(msg,socket);
     }
   })
   socket.on("submitLoginAttempt", function (msg) {

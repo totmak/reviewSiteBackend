@@ -12,7 +12,6 @@ function enryptJSON(data){
         data[key] = encryptor.encrypt(value);
       }
     });
-    console.log(data);
     return data;
 }
 
@@ -22,7 +21,6 @@ function decryptJSON(data){
       data[key] = encryptor.decrypt(data[key]);
     }
   });
-  console.log(data);
   return data;
 }
 
@@ -129,13 +127,30 @@ class Database {
       databasesList.databases.forEach(db => console.log(` - ${db.name}`));
   };
 
-   async registerAccount(info){
+  async usernameIsInvalid(field, socket){
+    const usern = await this.getCollectionById("usernames").getOneFrom(
+      {"value": field},{value: 1}
+    )
+
+    if (usern != undefined){
+      socket.emit('usernameRegisterAlreadyUsed', field);
+      return true;
+    }
+  }
+
+   async registerAccount(info, socket){
+    if (await this.usernameIsInvalid(info.username, socket)){
+      console.log("Registeration has been aborted due duplicate username");
+      return;
+    }
     const uID = (await this.getCollectionById("user_ids").getCount())+1000;
     await this.addToCollection("user_ids", {"value": uID});
     await this.addToCollection("usernames", {"value": info.username, "uID": uID});
     await this.addToCollection("forenames", {"value": info.firstname, "uID": uID});
     await this.addToCollection("surnames", {"value": info.lastname, "uID": uID});
     await this.addToCollection("passwords", {"value": info.password, "uID": uID});
+    socket.emit('registerSuccess');
+
   }
 
   async findLoginStatus(info, socket){
@@ -233,7 +248,6 @@ class Database {
     await this.addToCollection("messages", {"groupName": info.group, "message": info.message, "user": info.user!=null?info.user:1});
     const groupMessages = await this.getCollectionById("messages").getAllFrom(
       { "groupName": group.name}, {_id: 0})
-      console.log(groupMessages)
     socket.emit('updateChatLog', {"messages": groupMessages, "participants": group.participants});
   }
 
