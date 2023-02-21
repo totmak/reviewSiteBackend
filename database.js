@@ -1,10 +1,10 @@
 const MongoClient = require('mongodb').MongoClient;
 const uri = "mongodb://mongo:BeyDUhUoN0iLegRFPN4L@containers-us-west-130.railway.app:6055"
 const randtoken = require('rand-token');
-
-const serverKey = '6aKSdlOzhtzEAt1T'; //TODO replace with server variable
-
+const serverKey = process.env.KEY;
 const encryptor = require('simple-encryptor')(serverKey);
+
+
 
 function enryptJSON(data){
     Object.entries(data).forEach(([key, value]) => {

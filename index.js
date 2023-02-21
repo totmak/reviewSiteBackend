@@ -11,6 +11,9 @@ const { Server } = require("socket.io");
 const dbConnection = require('./database.js').estCon;
 
 const PORT = process.env.PORT;
+
+
+
 const io = require("socket.io")(server, {
   origins: ["ws:reviewsite-production.up.railway.app:3000"],
 });
@@ -97,6 +100,13 @@ io.on('connection', (socket, next) => {
   socket.once("disconnect", function () {
     const remUserIndex = userStatus.list.findIndex((item, i) => { return item.socket == socket });
     console.log(`User had disconnected`);
+    const ind = userStatus.list.findIndex((item, i) => {
+      return socket == item.socker;
+    });
+    if (ind != -1){
+      userStatus.list.splice(ind,1);
+    }
+
     userStatus.list.splice(remUserIndex,1)
     if (userStatus.list.length == 0){ dbConnection.unestabalish(); }
   })
