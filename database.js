@@ -1,5 +1,5 @@
 const MongoClient = require('mongodb').MongoClient;
-const uri = "mongodb://mongo:BeyDUhUoN0iLegRFPN4L@containers-us-west-130.railway.app:6055"
+const uri = process.env.MONGO_URL;
 const serverKey = process.env.KEY;
 const encryptor = require('simple-encryptor')(serverKey);
 
@@ -191,11 +191,21 @@ class Database {
     const group = await this.getCollectionById("groups").getOneFrom(
       {"name": info.group}, {}
     );
-    if (group.participants[info.uID] == undefined){
-      throw new Error("participant uID does not match")
+
+    var creatorName = "UNKNOWN";
+    try {
+      creatorName = group.participants[info.uID];
+    } catch (e) {
+      console.info(group,e);
+      console.error("participant uID does not match")
+    } finally {
+      const mst = `New chat room has been created by ${creatorName}`;
+      await this.addToCollection("messages", {"groupName":info.group, "message": mst, "user": 0});
     }
-    const mst = `New chat room has been created by ${group.participants[info.uID]}`;
-    await this.addToCollection("messages", {"groupName":info.group, "message": mst, "user": 0});
+
+
+
+
     return group;
   }
 

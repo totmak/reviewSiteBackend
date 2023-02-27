@@ -16,13 +16,9 @@ const encryptor = require('simple-encryptor')(process.env.KEY);
 
 
 const io = require("socket.io")(server, {
-  origins: ["ws:localhost:3000"],
+  origins: [process.env.URL],
 });
 
-/*
-  ws:localhost:3000
-  ws:reviewsite-production.up.railway.app:3000
-*/
 
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
