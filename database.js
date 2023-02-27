@@ -1,12 +1,11 @@
 const MongoClient = require('mongodb').MongoClient;
 const uri = "mongodb://mongo:BeyDUhUoN0iLegRFPN4L@containers-us-west-130.railway.app:6055"
-const randtoken = require('rand-token');
 const serverKey = process.env.KEY;
 const encryptor = require('simple-encryptor')(serverKey);
 
 
 
-function enryptJSON(data){
+function encryptJSON(data){
     Object.entries(data).forEach(([key, value]) => {
       if (key != '_id'){
         data[key] = encryptor.encrypt(value);
@@ -43,7 +42,7 @@ class Collection {
   }
 
   async addTo(addition){
-    enryptJSON(addition);
+    encryptJSON(addition);
     this.client.db(this.parent.id).collection(this.id).insertOne(addition)
   }
 
@@ -66,7 +65,7 @@ class Collection {
     let cur;
     const listQuery = [];
     while (await cursor.hasNext()) {
-      cur = await cursor.next()
+      cur = await cursor.next();
       decryptJSON(cur);
       if (matchQuery(cur, query)){
         listQuery.push(cur);
@@ -84,7 +83,7 @@ class Collection {
   }
 
   async updateOneCollection(query, update){
-    const updateEnc = enryptJSON(update);
+    const updateEnc = encryptJSON(update);
     const doc = await this.getOneFrom(query,{});
     await this.client.db(this.parent.id).collection(this.id).updateOne(
       {_id: doc._id},
@@ -133,7 +132,7 @@ class Database {
     )
 
     if (usern != undefined){
-      socket.emit('usernameRegisterAlreadyUsed', field);
+      socket.emit('usernameRegisterAlreadyUsed', encryptor.encrypt(field));
       return true;
     }
   }
@@ -158,7 +157,7 @@ class Database {
       {"value": info.username},{_id: 0}
     );
     if (userName == null){
-      socket.emit('loginFailNoUsername', userName);
+      socket.emit('loginFailNoUsername');
     } else {
       const uID = userName.uID;
       const passCheck = await this.getCollectionById("passwords").getOneFrom(
@@ -166,9 +165,9 @@ class Database {
           "value": info.password
         }, {})
         if (passCheck){
-          socket.emit('loginSuccess', userName);
+          socket.emit('loginSuccess', encryptor.encrypt(userName));
         } else {
-          socket.emit('loginFailWrongPassword', userName);
+          socket.emit('loginFailWrongPassword', encryptor.encrypt(userName));
         }
     }
   }
@@ -238,7 +237,8 @@ class Database {
     );
     const groupMessages = await this.getCollectionById("messages").getAllFrom(
       { "groupName": group.name}, {_id: 0})
-    socket.emit("updateChatLog", {"messages": groupMessages, "participants": group.participants});
+    const emsg = encryptor.encrypt({"messages": groupMessages, "participants": group.participants});
+    socket.emit("updateChatLog", emsg);
   }
 
   async handleChatMessage(info, socket){
@@ -248,7 +248,7 @@ class Database {
     await this.addToCollection("messages", {"groupName": info.group, "message": info.message, "user": info.user!=null?info.user:1});
     const groupMessages = await this.getCollectionById("messages").getAllFrom(
       { "groupName": group.name}, {_id: 0})
-    socket.emit('updateChatLog', {"messages": groupMessages, "participants": group.participants});
+    socket.emit('updateChatLog', encryptor.encrypt({"messages": groupMessages, "participants": group.participants}));
   }
 
 }

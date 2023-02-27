@@ -2,7 +2,7 @@ const core = require('@actions/core');
 const github = require('@actions/github');
 const express = require('express');
 const app = express();
-
+const randtoken = require('rand-token');
 require("dotenv").config();
 
 const http = require('http');
@@ -11,11 +11,12 @@ const { Server } = require("socket.io");
 const dbConnection = require('./database.js').estCon;
 
 const PORT = process.env.PORT;
+const encryptor = require('simple-encryptor')(process.env.KEY);
 
 
 
 const io = require("socket.io")(server, {
-  origins: ["ws:reviewsite-production.up.railway.app:3000"],
+  origins: ["ws:localhost:3000"],
 });
 
 /*
@@ -35,7 +36,7 @@ const userUpdator = function(){
   console.log("updating sockets...");
   userStatus.list.forEach((item, i) => {
     if (item.isConnected == false){
-      item.socket.emit('affirmConnection', true);
+      item.socket.emit('affirmConnection', encryptor.encrypt(true));
       item.isConnected = true;
     }
   });
@@ -68,37 +69,37 @@ io.on('connection', (socket, next) => {
     const db = dbConnection.getDatabaseById("user_accounts");
 
     if (db != undefined) {
-      db.registerAccount(msg,socket);
+      db.registerAccount(encryptor.decrypt(msg),socket);
     }
   })
   socket.on("submitLoginAttempt", function (msg) {
     const db = dbConnection.getDatabaseById("user_accounts");
     if (db != undefined) {
-      db.findLoginStatus(msg, socket);
+      db.findLoginStatus(encryptor.decrypt(msg), socket);
     };
   })
 
   socket.on("logout", function (msg) {
-    console.log(`User #${msg} has logged out`);
-    socket.emit('loginOutConfirm', true);
+    const us = encryptor.decrypt(msg);
+    console.log(`User #${us} has logged out`);
+    socket.emit('loginOutConfirm', encryptor.encrypt(true));
   })
 
   socket.on("requestJoiningGroup", function (msg) {
     const db = dbConnection.getDatabaseById("chats");
     if (db != undefined) {
-      db.handleGroupJoin(msg, socket);
+      db.handleGroupJoin(encryptor.decrypt(msg), socket);
     };
   })
 
   socket.on("sendChatMessage", function (msg) {
     const db = dbConnection.getDatabaseById("chats");
     if (db != undefined) {
-      db.handleChatMessage(msg, socket);
+      db.handleChatMessage(encryptor.decrypt(msg), socket);
     };
   })
 
   socket.once("disconnect", function () {
-    const remUserIndex = userStatus.list.findIndex((item, i) => { return item.socket == socket });
     console.log(`User had disconnected`);
     const ind = userStatus.list.findIndex((item, i) => {
       return socket == item.socker;
@@ -107,7 +108,6 @@ io.on('connection', (socket, next) => {
       userStatus.list.splice(ind,1);
     }
 
-    userStatus.list.splice(remUserIndex,1)
     if (userStatus.list.length == 0){ dbConnection.unestabalish(); }
   })
 });
